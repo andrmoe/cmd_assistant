@@ -10,13 +10,23 @@ from ollamaapi import query_ollama
 
 def run_command(cmd):
     """Run a shell command and return stdout+stderr."""
-    result = subprocess.run(
+    process = subprocess.Popen(
         cmd,
-        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         text=True,
-        capture_output=True,
+        bufsize=1,
+        universal_newlines=True
     )
-    return result.stdout + result.stderr
+
+    output_lines = []
+    for line in process.stdout:
+        sys.stdout.write(line)
+        sys.stdout.flush()
+        output_lines.append(line)
+
+    process.wait()
+    return "".join(output_lines)
 
 
 def main():
@@ -32,7 +42,7 @@ def main():
         print()
     else:
         # 1. Collect command from args
-        command = " ".join(sys.argv[1:])
+        command = sys.argv[1:]
         #print(f">>> Running: {command}")
 
         # 2. Run the command
