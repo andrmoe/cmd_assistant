@@ -54,7 +54,14 @@ def run_and_help_with_command(command: str) -> tuple[str, str]:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        pass
+        output = ""
+        prompt = "The user is using a linux command line. Your job is to help with commands. Be as concise as possible.\n\nThe user enters a command to the system. This is reproduced for you under 'Command:', the command is run by the system, and the output is reproduced for you under 'Output'. \nIf something is wrong or inefficient, let the user know. Otherwise just respond with 'OK'.\n"
+        for line in sys.stdin:
+            print(line, end="")
+            output += line
+        request = prompt+f"Command:\n{" ".join(sys.argv[1:])}\n\nOutput:\n{output}\n\n"+'\n'
+        print(request)
+        print_ai_response(query_ollama(request))
     elif sys.argv[1][0].isupper():
         answer_simple_request(" ".join(sys.argv[1:]))
     else:
