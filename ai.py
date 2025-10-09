@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 import subprocess
 import sys
-import readline  # allows arrow-key editing of input
 from ollamaapi import query_ollama
-#from openai import OpenAI
+from typing import Iterable
 
-#client = OpenAI()  # assumes OPENAI_API_KEY is set in environment
-
-
-def run_command(cmd):
-    """Run a shell command and return stdout+stderr."""
+"""Run a shell command and return stdout+stderr."""
+def run_command(cmd: str) -> str:
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -29,33 +25,41 @@ def run_command(cmd):
     return "".join(output_lines)
 
 
-def main():
-    prompt = "The user is using a linux command line. Your job is to help with commands. Be as concise as possible.\n\nThe user enters a command to the system. This is reproduced for you under 'Command:', the command is run by the system, and the output is reproduced for you under 'Output'. \nIf something is wrong or inefficient, let the user know. Otherwise just respond with 'OK'.\n"
-    history = prompt
+"""Takes an iterable of strings and prints them as they arrive. Returns the full printed string"""
+def print_ai_response(response_iter: Iterable[str]) -> str:
+    response = ""
+    for chunk in response_iter:
+        print(chunk, end="", flush=True)
+        response += chunk
+        
+    print()
+    return response
+
+
+"""Takes a request string and prints an ai response token by token. Returns the result."""
+def answer_simple_request(request: str) -> str:
+    history = "You are a linux command line assistant. Answer the user's request as concisely as possible."
+    history += "User request: " + request
+    return print_ai_response(query_ollama(history))
+
+
+"""Takes a command string an executes it. Prints an ai response to the command string and output. Returns (command output, ai response)."""
+def run_and_help_with_command(command: str) -> tuple[str, str]:
+    output = run_command(command)
+    history = "The user is using a linux command line. Your job is to help with commands. Be as concise as possible.\n\nThe user enters a command to the system. This is reproduced for you under 'Command:', the command is run by the system, and the output is reproduced for you under 'Output'. \nIf something is wrong or inefficient, let the user know. Otherwise just respond with 'OK'.\n"
+    history += f"Command:\n{command}\n\nOutput:\n{output}\n\n"
+    ai_response = print_ai_response(query_ollama(history))
+    return output, ai_response
+
+
+def main() -> None:
     if len(sys.argv) < 2:
         pass
     elif sys.argv[1][0].isupper():
-        history = "You are a linux command line assistant. Answer the user's request as concisely as possible."
-        history += "User request: " + " ".join(sys.argv[1:])
-        for chunk in query_ollama(history):
-            print(chunk, end="", flush=True)
-        print()
+        answer_simple_request(" ".join(sys.argv[1:]))
     else:
-        # 1. Collect command from args
         command = sys.argv[1:]
-        #print(f">>> Running: {command}")
-
-        # 2. Run the command
-        output = run_command(command)
-        print(output)
-
-        # 3. REPL loop for AI questions
-        history += f"Command:\n{command}\n\nOutput:\n{output}\n\n"
-        #print(history)
-        # 4. Query AI model with context
-        for chunk in query_ollama(history):
-            print(chunk, end="", flush=True)
-        print()
+        run_and_help_with_command(command)
 
 if __name__ == "__main__":
     main()
