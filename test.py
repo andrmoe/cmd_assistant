@@ -1,5 +1,6 @@
-from command_data import CommandData, CommandSession
+from command_data import CommandData, CommandSession, create_new_session
 import json
+
 
 def test_session_save(tmp_path):
     session = CommandSession(id=0, prompt="Hello", save_dir=str(tmp_path), commands=[CommandData(command="fake command", stdin="fake output", ai_response="OK")])
@@ -13,3 +14,12 @@ def test_session_save(tmp_path):
     assert session_dict["commands"][0]["command"] == "fake command"
     assert session_dict["commands"][0]["stdin"] == "fake output"
     assert session_dict["commands"][0]["ai_response"] == "OK"
+
+
+def test_create_new_session(tmp_path):
+    for i in range(5):
+        (tmp_path / f"session.{i}.json").write_text("")
+    session = create_new_session("Hello", tmp_path)
+    assert session.id == 5
+    session_dict = json.loads((tmp_path / "session.5.json").read_text(encoding="utf-8"))
+    assert session_dict["id"] == 5

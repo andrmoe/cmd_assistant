@@ -31,3 +31,16 @@ class CommandSession:
         path = Path(self.save_dir) / self.filename
         path.write_text(json.dumps(asdict(self), indent=2))
 
+
+def create_new_session(prompt: str, save_directory: Path) -> CommandSession:
+    existing_file_names = [p.name for p in save_directory.iterdir() if p.is_file()]
+    existing_ids = []
+    for file_name in existing_file_names:
+        parts = file_name.split('.')
+        # filename must have the form "session.<number>.json"
+        if len(parts) == 3 and parts[0] == "session" and parts[1].isdigit() and parts[2] == "json":
+            existing_ids.append(int(parts[1]))
+    new_id = 1 + max(existing_ids)
+    session = CommandSession(id=new_id, prompt=prompt, save_dir=str(save_directory), commands=[])
+    session.save()
+    return session
