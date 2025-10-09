@@ -59,7 +59,7 @@ def main() -> None:
         for line in sys.stdin:
             print(line, end="")
             output += line
-        request = prompt+f"Command:\n{" ".join(sys.argv[1:])}\n\nOutput:\n{output}\n\n"+'\n'
+        request = prompt+f"Command:\n{' '.join(sys.argv[1:])}\n\nOutput:\n{output}\n\n"+'\n'
         print(request)
         print_ai_response(query_ollama(request))
     elif sys.argv[1][0].isupper():
