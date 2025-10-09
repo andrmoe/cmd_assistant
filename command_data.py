@@ -40,7 +40,7 @@ def create_new_session(prompt: str, save_directory: Path) -> CommandSession:
         # filename must have the form "session.<number>.json"
         if len(parts) == 3 and parts[0] == "session" and parts[1].isdigit() and parts[2] == "json":
             existing_ids.append(int(parts[1]))
-    new_id = 1 + max(existing_ids)
+    new_id = (0 if not existing_ids else max(existing_ids) + 1)
     session = CommandSession(id=new_id, prompt=prompt, save_dir=str(save_directory), commands=[])
     session.save()
     return session

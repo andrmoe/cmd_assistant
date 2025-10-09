@@ -17,9 +17,13 @@ def test_session_save(tmp_path):
 
 
 def test_create_new_session(tmp_path):
-    for i in range(5):
+    session0 = create_new_session("Hello", tmp_path)
+    assert session0.id == 0
+    session0_dict = json.loads((tmp_path / "session.0.json").read_text(encoding="utf-8"))
+    assert session0_dict["id"] == 0
+    for i in range(1, 5):
         (tmp_path / f"session.{i}.json").write_text("")
-    session = create_new_session("Hello", tmp_path)
-    assert session.id == 5
-    session_dict = json.loads((tmp_path / "session.5.json").read_text(encoding="utf-8"))
-    assert session_dict["id"] == 5
+    session5 = create_new_session("Hello", tmp_path)
+    assert session5.id == 5
+    session5_dict = json.loads((tmp_path / "session.5.json").read_text(encoding="utf-8"))
+    assert session5_dict["id"] == 5
