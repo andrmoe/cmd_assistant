@@ -2,13 +2,13 @@
 import subprocess
 import sys
 from ollamaapi import query_ollama
-from typing import Iterable
+from typing import Iterable, TextIO, IO
 from command_data import CommandData
-from prompts import command_session_to_prompt
+from assistant import Assistant
 
 
 """Run a shell command and return stdout+stderr."""
-def run_command(cmd: str) -> str:
+def run_command(cmd: list[str]) -> str:
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -19,6 +19,8 @@ def run_command(cmd: str) -> str:
     )
 
     output_lines = []
+    if process.stdout is None:
+        raise IOError("process.stdout is None when running: {cmd}")
     for line in process.stdout:
         sys.stdout.write(line)
         sys.stdout.flush()
@@ -47,7 +49,7 @@ def answer_simple_request(request: str) -> str:
 
 
 """Takes a command string an executes it. Prints an ai response to the command string and output. Returns (command output, ai response)."""
-def run_and_help_with_command(command: str) -> tuple[str, str]:
+def run_and_help_with_command(command: list[str]) -> tuple[str, str]:
     output = run_command(command)
     history = "The user is using a linux command line. Your job is to help with commands. Be as concise as possible.\n\nThe user enters a command to the system. This is reproduced for you under 'Command:', the command is run by the system, and the output is reproduced for you under 'Output'. \nIf something is wrong or inefficient, let the user know. Otherwise just respond with 'OK'.\n"
     history += f"Command:\n{command}\n\nOutput:\n{output}\n\n"
@@ -56,8 +58,9 @@ def run_and_help_with_command(command: str) -> tuple[str, str]:
 
 
 def read_command_data() -> CommandData:
-    cmd = CommandData("<command missing>", "", None)
-    for line in sys.stdin:
+    cmd = CommandData("<command missing>", "", "")
+    stdin: TextIO = sys.stdin
+    for line in stdin:
         print(line, end="")
         cmd.append_stdin(line)
     return cmd

@@ -1,6 +1,8 @@
 from command_data import CommandData, CommandSession, SessionManager
+from assistant import Assistant
 import json
 from pathlib import Path
+from typing import Generator
 
 
 def test_session_save(tmp_path):
@@ -39,10 +41,14 @@ def test_find_most_recent_session(tmp_path: Path):
     assert session_manager.find_most_recent_session() is None
     for _ in range(5):
         session_manager.create_new_session("Hello")
-    assert session_manager.find_most_recent_session().name == "session.4.json"
+    most_recent_session_path = session_manager.find_most_recent_session()
+    assert most_recent_session_path is not None
+    assert most_recent_session_path.name == "session.4.json"
     session_manager.sessions[2].prompt += " World!"
     session_manager.sessions[2].save()
-    assert session_manager.find_most_recent_session().name == f"session.{session_manager.sessions[2].id}.json"
+    most_recent_session_path = session_manager.find_most_recent_session()
+    assert most_recent_session_path is not None
+    assert most_recent_session_path.name == f"session.{session_manager.sessions[2].id}.json"
 
 
 def test_session_from_file(tmp_path: Path):
@@ -56,3 +62,31 @@ def test_session_from_file(tmp_path: Path):
     session.save()
     loaded_session = CommandSession.from_file(tmp_path / session.filename)
     assert session == loaded_session
+
+
+def mock_ai_api(prompt: str) -> Generator[str, None, None]:
+        if "mock_prompt" in prompt:
+            yield "response to mock_prompt"
+        if "mock_command" in prompt:
+            yield "response to mock_command"
+        if "mock_stdin" in prompt:
+            yield "response to mock_stdin"
+
+
+def test_assistant_creation(tmp_path: Path):
+    assistant0 = Assistant(ai_api=mock_ai_api, save_path=tmp_path)
+    assert (tmp_path / assistant0.session.filename).is_file()
+    assistant1 = Assistant(ai_api=mock_ai_api, save_path=tmp_path)
+    assert assistant0.session == assistant1.session
+
+
+def test_assistant_new_command(tmp_path: Path):
+    assistant = Assistant(ai_api=mock_ai_api, save_path=tmp_path)
+    command = CommandData(command="mock_command", stdin="mock_stdin", ai_response="")
+    response = "".join([chunk for chunk in assistant.new_command(command)])
+    most_recent_session = assistant.session_manager.load_most_recent_session()
+    assert most_recent_session is not None
+    if most_recent_session is not None:
+        assert most_recent_session.commands[-1].ai_response == response
+    assert "mock_command" in response
+    assert "mock_stdin" in response

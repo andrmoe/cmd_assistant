@@ -62,6 +62,9 @@ class SessionManager:
             if len(parts) == 3 and parts[0] == "session" and parts[1].isdigit() and parts[2] == "json":
                 files.append(path)
         return files
+    
+    def number_of_sessions(self) -> int:
+        return len(self.get_session_files())
 
     def create_new_session(self, prompt: str) -> CommandSession:
         existing_ids = [int(p.name.split('.')[1]) for p in self.get_session_files()]
@@ -74,4 +77,14 @@ class SessionManager:
     def find_most_recent_session(self) -> Path | None:
         session_files = self.get_session_files()
         return max(session_files, key=lambda p: p.stat().st_mtime, default=None)
+    
+    def load_most_recent_session(self) -> CommandSession | None:
+        session_path = self.find_most_recent_session()
+        if session_path is None:
+            return None
+        
+        session = CommandSession.from_file(session_path)
+        self.sessions.append(session)
+        return session
+        
 
