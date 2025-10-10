@@ -40,15 +40,26 @@ class SessionManager:
         self.path = path
         self.sessions = []
 
-    def create_new_session(self, prompt: str) -> CommandSession:
-        existing_file_names = [p.name for p in self.path.iterdir() if p.is_file()]
-        existing_ids = []
-        for file_name in existing_file_names:
-            parts = file_name.split('.')
+    def get_session_files(self) -> list[Path]:
+        files = []
+        for path in self.path.iterdir():
+            if not path.is_file():
+                continue
+            parts = path.name.split('.')
             # filename must have the form "session.<number>.json"
             if len(parts) == 3 and parts[0] == "session" and parts[1].isdigit() and parts[2] == "json":
-                existing_ids.append(int(parts[1]))
+                files.append(path)
+        return files
+
+    def create_new_session(self, prompt: str) -> CommandSession:
+        existing_ids = [int(p.name.split('.')[1]) for p in self.get_session_files()]
         new_id = (0 if not existing_ids else max(existing_ids) + 1)
         session = CommandSession(id=new_id, prompt=prompt, save_dir=str(self.path), commands=[])
         session.save()
+        self.sessions.append(session)
         return session
+    
+    def find_most_recent_session(self) -> Path | None:
+        session_files = self.get_session_files()
+        return max(session_files, key=lambda p: p.stat().st_mtime, default=None)
+

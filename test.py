@@ -1,5 +1,6 @@
 from command_data import CommandData, CommandSession, SessionManager
 import json
+from pathlib import Path
 
 
 def test_session_save(tmp_path):
@@ -17,15 +18,28 @@ def test_session_save(tmp_path):
     assert session_dict["commands"][0]["ai_response"] == "OK"
 
 
-def test_create_new_session(tmp_path):
+def test_create_new_session(tmp_path: Path):
+    (tmp_path / "dummydir").mkdir()
+    (tmp_path / "dummyfile").touch()
     session_manager = SessionManager(tmp_path)
     session0 = session_manager.create_new_session("Hello")
     assert session0.id == 0
     session0_dict = json.loads((tmp_path / "session.0.json").read_text(encoding="utf-8"))
     assert session0_dict["id"] == 0
     for i in range(1, 5):
-        (tmp_path / f"session.{i}.json").write_text("")
+        (tmp_path / f"session.{i}.json").touch()
     session5 = session_manager.create_new_session("Hello")
     assert session5.id == 5
     session5_dict = json.loads((tmp_path / "session.5.json").read_text(encoding="utf-8"))
     assert session5_dict["id"] == 5
+
+
+def test_find_most_recent_session(tmp_path: Path):
+    session_manager = SessionManager(tmp_path)
+    assert session_manager.find_most_recent_session() is None
+    for _ in range(5):
+        session_manager.create_new_session("Hello")
+    assert session_manager.find_most_recent_session().name == "session.4.json"
+    session_manager.sessions[2].prompt += " World!"
+    session_manager.sessions[2].save()
+    assert session_manager.find_most_recent_session().name == f"session.{session_manager.sessions[2].id}.json"
