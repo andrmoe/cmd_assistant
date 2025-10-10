@@ -43,3 +43,16 @@ def test_find_most_recent_session(tmp_path: Path):
     session_manager.sessions[2].prompt += " World!"
     session_manager.sessions[2].save()
     assert session_manager.find_most_recent_session().name == f"session.{session_manager.sessions[2].id}.json"
+
+
+def test_session_from_file(tmp_path: Path):
+    session_manager = SessionManager(tmp_path)
+    session = session_manager.create_new_session("Hello")
+    loaded_session = CommandSession.from_file(tmp_path / session.filename)
+    assert session == loaded_session
+    for i in range(10):
+        cmd = CommandData("Count for me.", "", f"{i}")
+        session.commands.append(cmd)
+    session.save()
+    loaded_session = CommandSession.from_file(tmp_path / session.filename)
+    assert session == loaded_session
