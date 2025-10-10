@@ -1,9 +1,10 @@
-from command_data import CommandData, CommandSession, create_new_session
+from command_data import CommandData, CommandSession, SessionManager
 import json
 
 
 def test_session_save(tmp_path):
-    session = CommandSession(id=0, prompt="Hello", save_dir=str(tmp_path), commands=[CommandData(command="fake command", stdin="fake output", ai_response="OK")])
+    session = CommandSession(id=0, prompt="Hello", save_dir=str(tmp_path), 
+                             commands=[CommandData(command="fake command", stdin="fake output", ai_response="OK")])
     session.save()
 
     path = tmp_path / "session.0.json"
@@ -17,13 +18,14 @@ def test_session_save(tmp_path):
 
 
 def test_create_new_session(tmp_path):
-    session0 = create_new_session("Hello", tmp_path)
+    session_manager = SessionManager(tmp_path)
+    session0 = session_manager.create_new_session("Hello")
     assert session0.id == 0
     session0_dict = json.loads((tmp_path / "session.0.json").read_text(encoding="utf-8"))
     assert session0_dict["id"] == 0
     for i in range(1, 5):
         (tmp_path / f"session.{i}.json").write_text("")
-    session5 = create_new_session("Hello", tmp_path)
+    session5 = session_manager.create_new_session("Hello")
     assert session5.id == 5
     session5_dict = json.loads((tmp_path / "session.5.json").read_text(encoding="utf-8"))
     assert session5_dict["id"] == 5
