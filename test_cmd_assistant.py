@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Generator
 
 
-def test_session_save(tmp_path):
+def test_session_save(tmp_path: Path) -> None:
     session = CommandSession(id=0, prompt="Hello", save_dir=str(tmp_path), 
                              commands=[CommandData(command="fake command", stdin="fake output", ai_response="OK")])
     session.save()
@@ -20,7 +20,7 @@ def test_session_save(tmp_path):
     assert session_dict["commands"][0]["ai_response"] == "OK"
 
 
-def test_create_new_session(tmp_path: Path):
+def test_create_new_session(tmp_path: Path) -> None:
     (tmp_path / "dummydir").mkdir()
     (tmp_path / "dummyfile").touch()
     session_manager = SessionManager(tmp_path)
@@ -36,7 +36,7 @@ def test_create_new_session(tmp_path: Path):
     assert session5_dict["id"] == 5
 
 
-def test_find_most_recent_session(tmp_path: Path):
+def test_find_most_recent_session(tmp_path: Path) -> None:
     session_manager = SessionManager(tmp_path)
     assert session_manager.find_most_recent_session() is None
     for _ in range(5):
@@ -51,7 +51,7 @@ def test_find_most_recent_session(tmp_path: Path):
     assert most_recent_session_path.name == f"session.{session_manager.sessions[2].id}.json"
 
 
-def test_session_from_file(tmp_path: Path):
+def test_session_from_file(tmp_path: Path) -> None:
     session_manager = SessionManager(tmp_path)
     session = session_manager.create_new_session("Hello")
     loaded_session = CommandSession.from_file(tmp_path / session.filename)
@@ -73,14 +73,14 @@ def mock_ai_api(prompt: str) -> Generator[str, None, None]:
             yield "response to mock_stdin"
 
 
-def test_assistant_creation(tmp_path: Path):
+def test_assistant_creation(tmp_path: Path) -> None:
     assistant0 = Assistant(ai_api=mock_ai_api, save_path=tmp_path)
     assert (tmp_path / assistant0.session.filename).is_file()
     assistant1 = Assistant(ai_api=mock_ai_api, save_path=tmp_path)
     assert assistant0.session == assistant1.session
 
 
-def test_assistant_new_command(tmp_path: Path):
+def test_assistant_new_command(tmp_path: Path) -> None:
     assistant = Assistant(ai_api=mock_ai_api, save_path=tmp_path)
     command = CommandData(command="mock_command", stdin="mock_stdin", ai_response="")
     response = "".join([chunk for chunk in assistant.new_command(command)])
