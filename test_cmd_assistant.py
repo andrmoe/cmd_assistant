@@ -1,8 +1,10 @@
+import pytest
 from command_data import CommandData, CommandSession, SessionManager
 from assistant import Assistant
 import json
 from pathlib import Path
 from typing import Generator
+from ollamaapi import query_ollama
 
 
 def test_session_save(tmp_path: Path) -> None:
@@ -63,10 +65,16 @@ def test_session_from_file(tmp_path: Path) -> None:
     loaded_session = CommandSession.from_file(tmp_path / session.filename)
     assert session == loaded_session
 
+    # Test of parser validation
+    session_dict = json.loads((tmp_path / session.filename).read_text(encoding="utf-8"))
+    session_dict["commands"] = {f'command_{i}': cmd for i, cmd in enumerate(session_dict["commands"])}
+    (tmp_path / session.filename).write_text(json.dumps(session_dict), encoding="utf-8")
+    with pytest.raises(TypeError):
+        CommandSession.from_file(tmp_path / session.filename)
 
 def mock_ai_api(prompt: str) -> Generator[str, None, None]:
-        if "mock_prompt" in prompt:
-            yield "response to mock_prompt"
+        if "linux" in prompt:
+            yield "response to linux"
         if "mock_command" in prompt:
             yield "response to mock_command"
         if "mock_stdin" in prompt:
@@ -90,3 +98,19 @@ def test_assistant_new_command(tmp_path: Path) -> None:
         assert most_recent_session.commands[-1].ai_response == response
     assert "mock_command" in response
     assert "mock_stdin" in response
+
+    response = "".join([chunk for chunk in assistant.new_command(command)])
+    assert "linux" in assistant.session.commands[0].ai_response
+    assert "mock_command" in assistant.session.commands[0].ai_response
+    assert "mock_stdin" in assistant.session.commands[0].ai_response
+    assert "linux" in response
+    assert "mock_command" in response
+    assert "mock_stdin" in response
+
+
+# TODO: Mock the api call
+def test_query_ollama() -> None:
+    chunks = list(query_ollama("Repeat 'test' back to me once."))
+    assert chunks
+    with pytest.raises(IOError):
+        list(query_ollama("Repeat 'test' back to me once.", url="http://localhost:11434/api/wrongendpoint"))

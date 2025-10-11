@@ -4,17 +4,14 @@ from pathlib import Path
 from typing import Self, Any
 
 
+# TODO: Change dataclasses to TypedDict
+
+
 @dataclass
 class CommandData:
     command: str
     stdin: str
     ai_response: str
-
-    def append_stdin(self, line: str) -> None:
-        self.stdin += line
-    
-    def append_ai_response(self, token: str) -> None:
-        self.ai_response += token
 
 
 @dataclass
@@ -62,9 +59,6 @@ class SessionManager:
             if len(parts) == 3 and parts[0] == "session" and parts[1].isdigit() and parts[2] == "json":
                 files.append(path)
         return files
-    
-    def number_of_sessions(self) -> int:
-        return len(self.get_session_files())
 
     def create_new_session(self, prompt: str) -> CommandSession:
         existing_ids = [int(p.name.split('.')[1]) for p in self.get_session_files()]

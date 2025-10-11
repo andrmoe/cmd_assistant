@@ -55,29 +55,21 @@ def run_and_help_with_command(command: list[str]) -> tuple[str, str]:
     history += f"Command:\n{command}\n\nOutput:\n{output}\n\n"
     ai_response = print_ai_response(query_ollama(history))
     return output, ai_response
-
-
-def read_command_data() -> CommandData:
-    cmd = CommandData("<command missing>", "", "")
-    stdin: TextIO = sys.stdin
-    for line in stdin:
-        print(line, end="")
-        cmd.append_stdin(line)
-    return cmd
     
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        prompt = "The user is using a linux command line. Your job is to help with commands. Be as concise as possible.\n\nThe user enters a command to the system. This is reproduced for you under 'Command:', the command is run by the system, and the output is reproduced for you under 'Output'. \nIf something is wrong or inefficient, let the user know. Otherwise just respond with 'OK'.\n"
-        command_data = read_command_data()
-        request = prompt+f"Command:\n{' '.join(sys.argv[1:])}\n\nOutput:\n{command_data.stdin}\n\n"+'\n'
-        print(request)
-        command_data.ai_response = print_ai_response(query_ollama(request))
-    elif sys.argv[1][0].isupper():
-        answer_simple_request(" ".join(sys.argv[1:]))
-    else:
-        command = sys.argv[1:]
-        run_and_help_with_command(command)
+    ...
+    #if len(sys.argv) < 2:
+    #    prompt = "The user is using a linux command line. Your job is to help with commands. Be as concise as possible.\n\nThe user enters a command to the system. This is reproduced for you under 'Command:', the command is run by the system, and the output is reproduced for you under 'Output'. \nIf something is wrong or inefficient, let the user know. Otherwise just respond with 'OK'.\n"
+    #    command_data = read_command_data()
+    #    request = prompt+f"Command:\n{' '.join(sys.argv[1:])}\n\nOutput:\n{command_data.stdin}\n\n"+'\n'
+    #    print(request)
+    #    command_data.ai_response = print_ai_response(query_ollama(request))
+    #elif sys.argv[1][0].isupper():
+    #    answer_simple_request(" ".join(sys.argv[1:]))
+    #else:
+    #    command = sys.argv[1:]
+    #    run_and_help_with_command(command)
 
 
 if __name__ == "__main__":

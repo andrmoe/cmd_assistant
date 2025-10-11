@@ -2,8 +2,9 @@ import requests
 import json
 from typing import Generator
 
-def query_ollama(prompt: str, model: str = "llama3.2-vision:latest") -> Generator[str, None, None]:
-    url = "http://localhost:11434/api/generate"
+def query_ollama(prompt: str, url: str = "http://localhost:11434/api/generate", 
+                 model: str = "llama3.2-vision:latest") -> Generator[str, None, None]:
+    
     headers = {"Content-Type": "application/json"}
     data = {"model": model, "prompt": prompt}
 
@@ -20,11 +21,4 @@ def query_ollama(prompt: str, model: str = "llama3.2-vision:latest") -> Generato
                     break
         return
     else:
-        raise Exception(f"Error {response.status_code}: {response.text}")
-
-
-if __name__ == "__main__":
-    prompt = "Write a python script that solves a maze."
-    for chunk in query_ollama(prompt):
-        print(chunk, end="", flush=True)
-    print()
+        raise IOError(f"Error {response.status_code}: {response.text}")
