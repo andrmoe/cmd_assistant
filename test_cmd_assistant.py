@@ -114,3 +114,5 @@ def test_query_ollama() -> None:
     assert chunks
     with pytest.raises(IOError):
         list(query_ollama("Repeat 'test' back to me once.", url="http://localhost:11434/api/wrongendpoint"))
+
+# TODO: Test shell.py
