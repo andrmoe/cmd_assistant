@@ -2,6 +2,7 @@ from command_data import CommandData, CommandSession, SessionManager
 from ollamaapi import query_ollama
 from typing import Callable, Generator
 from pathlib import Path
+from abbreviation import abbreviation
 
 class Assistant:
     default_prompt: str
@@ -12,7 +13,7 @@ class Assistant:
     def __init__(self, ai_api: Callable[[str], Generator[str, None, None]] = query_ollama, 
                  save_path: Path = Path.cwd() / "sessions"): # TODO: Fix wrong path when not in project folder.
         self.ai_api = ai_api
-        self.default_prompt = "You are a linux command line assistant. You are run with the command utility 'ai'. You will receive stdin to 'ai', and the command you were invoked with. Help the user in a concise manner."
+        self.default_prompt = f"You are a linux command line assistant. You are run with the alias '{abbreviation}'. You will receive stdin to '{abbreviation}', and the command you were invoked with. Help the user in a concise manner."
         save_path.mkdir(parents=False, exist_ok=True)
         self.session_manager = SessionManager(save_path)
         s = self.session_manager.load_most_recent_session()

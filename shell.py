@@ -4,6 +4,7 @@ from pathlib import Path
 from command_data import CommandData
 from assistant import Assistant
 from typing import Iterable
+from abbreviation import abbreviation
 
 def parse_command_history(history: str) -> list[tuple[int, str]]:
     result: list[tuple[int, str]] = []
@@ -48,7 +49,7 @@ def shell() -> int:
     parsed_history = parse_command_history(history)
     last_command = parsed_history[-1][1]
     
-    output = read_stdin(forward_input=last_command[:2] != 'ai')
+    output = read_stdin(forward_input=last_command[:len(abbreviation)] != abbreviation)
  
     cmd = CommandData(command=last_command, stdin=output, ai_response="")
 

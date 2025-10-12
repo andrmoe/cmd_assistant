@@ -1,3 +1,5 @@
 pytest
+pytest-coverage
 requests
-
+types-requests
+mypy
