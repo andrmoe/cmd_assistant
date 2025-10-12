@@ -1,10 +1,13 @@
 import pytest
-from command_data import CommandData, CommandSession, SessionManager
-from assistant import Assistant
+import io
 import json
 from pathlib import Path
 from typing import Generator
+
+from command_data import CommandData, CommandSession, SessionManager
+from assistant import Assistant
 from ollamaapi import query_ollama
+from shell import *
 
 
 def test_session_save(tmp_path: Path) -> None:
@@ -79,6 +82,8 @@ def mock_ai_api(prompt: str) -> Generator[str, None, None]:
             yield "response to mock_command"
         if "mock_stdin" in prompt:
             yield "response to mock_stdin"
+        if "mock_ai_response" in prompt:
+            yield "response to mock_ai_response"
 
 
 def test_assistant_creation(tmp_path: Path) -> None:
@@ -115,4 +120,52 @@ def test_query_ollama() -> None:
     with pytest.raises(IOError):
         list(query_ollama("Repeat 'test' back to me once.", url="http://localhost:11434/api/wrongendpoint"))
 
-# TODO: Test shell.py
+
+def test_print_ai_response(capsys: pytest.CaptureFixture[str]) -> None:
+    print_ai_response(mock_ai_api("You are a linux command line assistant.\n"
+                                  "Command:\n"
+                                  "mock_command\n\n"
+                                  "Stdin:\n"
+                                  "mock_stdin\n\n"
+                                  "Assistant:\n"
+                                  "mock_ai_response\n"))
+    captured = capsys.readouterr()
+    output = captured.out.strip()
+    assert "linux" in output
+    assert "mock_command" in output
+    assert "mock_stdin" in output
+    assert "mock_ai_response" in output
+
+
+def test_shell_with_pipe(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    monkeypatch.setenv("HISTORY", "299  <fake command> | kj --no-reply")
+    command_output = "<fake command output>\n"
+    monkeypatch.setattr("sys.stdin", io.StringIO(command_output))
+    assert shell(["--no-reply"]) == 0
+    captured = capsys.readouterr()
+    assert command_output in captured.out
+
+
+def test_shell_without_pipe(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    monkeypatch.setenv("HISTORY", "300  kj --no-reply")
+    monkeypatch.setattr("sys.stdin", io.StringIO("<user request>\n"))
+    assert shell(["--no-reply"]) == 0
+    captured = capsys.readouterr()
+    assert captured.out.strip() == ""
+
+
+def test_missing_history(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("HISTORY", raising=False)
+    with pytest.raises(EnvironmentError):
+        get_command_history()
+
+
+@pytest.mark.parametrize("history_var", [
+    "301 <fake command>  --no-reply",  # Too few spaces after index, red herring "  " later
+    "3b2  <fake command>",  # Non-integer index
+    "<fake command>",       # No index
+])
+def test_malformed_history(monkeypatch: pytest.MonkeyPatch, history_var: str) -> None:
+    monkeypatch.setenv("HISTORY", history_var)
+    with pytest.raises(EnvironmentError):
+        parse_command_history(get_command_history())

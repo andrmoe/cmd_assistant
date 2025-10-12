@@ -31,10 +31,12 @@ class Assistant:
                 prompt += "Assistant:\n" + command.ai_response + "\n"
         return prompt
 
-    def new_command(self, command: CommandData) -> Generator[str, None, None]:
+    def new_command(self, command: CommandData, give_ai_response: bool = True) -> Generator[str, None, None]:
         self.session.commands.append(command)
-        prompt = self.command_session_to_prompt()
-        for chunk in self.ai_api(prompt):
-            command.ai_response += chunk
-            yield chunk
+        if give_ai_response:
+            prompt = self.command_session_to_prompt()
+            print(prompt)
+            for chunk in self.ai_api(prompt):
+                command.ai_response += chunk
+                yield chunk
         self.session.save()
