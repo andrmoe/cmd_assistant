@@ -137,19 +137,19 @@ def test_print_ai_response(capsys: pytest.CaptureFixture[str]) -> None:
     assert "mock_ai_response" in output
 
 
-def test_shell_with_pipe(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_shell_with_pipe(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
     monkeypatch.setenv("HISTORY", "299  <fake command> | kj --no-reply")
     command_output = "<fake command output>\n"
     monkeypatch.setattr("sys.stdin", io.StringIO(command_output))
-    assert shell(["--no-reply"]) == 0
+    assert shell(["--no-reply", "--path", str(tmp_path)]) == 0
     captured = capsys.readouterr()
     assert command_output in captured.out
 
 
-def test_shell_without_pipe(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_shell_without_pipe(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
     monkeypatch.setenv("HISTORY", "300  kj --no-reply")
     monkeypatch.setattr("sys.stdin", io.StringIO("<user request>\n"))
-    assert shell(["--no-reply"]) == 0
+    assert shell(["--no-reply", "--path", str(tmp_path)]) == 0
     captured = capsys.readouterr()
     assert captured.out.strip() == ""
 

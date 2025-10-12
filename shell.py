@@ -55,13 +55,14 @@ def shell(argv: Optional[Sequence[str]] = None) -> int:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", "--no-reply", action="store_true")
+    parser.add_argument("-p", "--path", default=str(Path.cwd() / "sessions"))  # TODO: Fix wrong path when not in project folder.
     args = parser.parse_args(argv)
     
     output = read_stdin(forward_input=last_command[:len(abbreviation)] != abbreviation)
  
     cmd = CommandData(command=last_command, stdin=output, ai_response="")
 
-    assistant = Assistant()
+    assistant = Assistant(Path(args.path))
 
     print_ai_response(assistant.new_command(cmd, give_ai_response=not args.no_reply))
 

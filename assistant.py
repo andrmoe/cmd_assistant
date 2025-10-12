@@ -10,8 +10,7 @@ class Assistant:
     session_manager: SessionManager
     ai_api: Callable[[str], Generator[str, None, None]]
 
-    def __init__(self, ai_api: Callable[[str], Generator[str, None, None]] = query_ollama, 
-                 save_path: Path = Path.cwd() / "sessions"): # TODO: Fix wrong path when not in project folder.
+    def __init__(self, save_path: Path, ai_api: Callable[[str], Generator[str, None, None]] = query_ollama):
         self.ai_api = ai_api
         self.default_prompt = f"You are a linux command line assistant. You are run with the alias '{abbreviation}'. You will receive stdin to '{abbreviation}', and the command you were invoked with. Help the user in a concise manner."
         save_path.mkdir(parents=False, exist_ok=True)
