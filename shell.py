@@ -48,6 +48,10 @@ def print_ai_response(response_iter: Iterable[str]) -> str:
     return response
 
 
+def default_storage_path() -> Path:
+    return Path.home() / "kj-assistant" / ".sessions"
+
+
 def shell(argv: Optional[Sequence[str]] = None) -> int:
     history = get_command_history()
     parsed_history = parse_command_history(history)
@@ -55,10 +59,11 @@ def shell(argv: Optional[Sequence[str]] = None) -> int:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", "--no-reply", action="store_true")
-    parser.add_argument("-p", "--path", default=str(Path.cwd() / "sessions"))  # TODO: Fix wrong path when not in project folder.
+    parser.add_argument("-p", "--path", default=str(default_storage_path()))
     args = parser.parse_args(argv)
     
-    output = read_stdin(forward_input=last_command[:len(abbreviation)] != abbreviation)
+    # Don't echo the input to the terminal, if the user didn't use a pipe.
+    output = read_stdin(forward_input=not last_command.startswith(abbreviation))
  
     cmd = CommandData(command=last_command, stdin=output, ai_response="")
 
@@ -66,7 +71,7 @@ def shell(argv: Optional[Sequence[str]] = None) -> int:
 
     print_ai_response(assistant.new_command(cmd, give_ai_response=not args.no_reply))
 
-    return 0  # TODO: Return error if exception
+    return 0
 
 if __name__ == '__main__':
     exit(shell())  # pragma: no cover - I don't know to test this.
