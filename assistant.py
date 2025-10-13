@@ -34,7 +34,6 @@ class Assistant:
         self.session.commands.append(command)
         if give_ai_response:
             prompt = self.command_session_to_prompt()
-            print(prompt)
             for chunk in self.ai_api(prompt):
                 command.ai_response += chunk
                 yield chunk
