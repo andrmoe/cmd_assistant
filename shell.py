@@ -5,7 +5,7 @@ from typing import Iterable, Optional, Sequence
 import argparse
 import re
 
-from command_data import CommandData
+from command_data import CommandData, SessionManager
 from assistant import Assistant
 from abbreviation import abbreviation
 
@@ -49,7 +49,11 @@ def print_ai_response(response_iter: Iterable[str]) -> str:
 
 
 def default_storage_path() -> Path:
-    return Path.home() / "kj-assistant" / ".sessions"
+    return Path.home() / f"{abbreviation}-assistant" / ".sessions"
+
+
+def welcome_message(session_id: int) -> str:
+    return f"{abbreviation} command line assistant. Session {session_id}"
 
 
 def shell(argv: Optional[Sequence[str]] = None) -> int:
@@ -57,19 +61,33 @@ def shell(argv: Optional[Sequence[str]] = None) -> int:
     parsed_history = parse_command_history(history)
     last_command = parsed_history[-1][1]
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-n", "--no-reply", action="store_true")
+    parser = argparse.ArgumentParser(prog=abbreviation)
+    parser.add_argument("-l", "--listen", action="store_true")
     parser.add_argument("-p", "--path", default=str(default_storage_path()))
+    parser.add_argument("-n", "--new-session", action="store_true")
+    parser.add_argument("-s", "--switch-session", nargs="?", const="interactive")
     args = parser.parse_args(argv)
+
+    if args.switch_session == "interactive":
+        raise NotImplementedError("This will be an interactive way to pick a session.")  # pragma: no cover - TODO: Implement
+    if args.switch_session is not None and (not args.switch_session.isdigit() or int(args.switch_session) < 0):
+        raise argparse.ArgumentTypeError("session id must be non-negative integer.")
+    
+    session_manager = SessionManager(Path(args.path), new_session=args.new_session)
+    assistant = Assistant(session_manager, session_id=args.switch_session)
+
+    print(welcome_message(assistant.session.id))
+    if assistant.initial_message:
+        print(assistant.initial_message)
+    print()
     
     # Don't echo the input to the terminal, if the user didn't use a pipe.
     output = read_stdin(forward_input=not last_command.startswith(abbreviation))
  
     cmd = CommandData(command=last_command, stdin=output, ai_response="")
+    
 
-    assistant = Assistant(Path(args.path))
-
-    print_ai_response(assistant.new_command(cmd, give_ai_response=not args.no_reply))
+    print_ai_response(assistant.new_command(cmd, give_ai_response=not args.listen))
 
     return 0
 

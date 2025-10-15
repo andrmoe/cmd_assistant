@@ -2,10 +2,11 @@ from dataclasses import dataclass, asdict
 import json
 from pathlib import Path
 from typing import Self, Any
+from abbreviation import abbreviation
 
 
 # TODO: Change dataclasses to TypedDict
-
+default_prompt = f"You are a linux command line assistant. You are run with the alias '{abbreviation}'. You will receive stdin to '{abbreviation}', and the command you were invoked with. Help the user in a concise manner."
 
 @dataclass
 class CommandData:
@@ -21,16 +22,20 @@ class CommandSession:
     save_dir: str
     commands: list[CommandData]
 
+    @classmethod
+    def make_filename(cls: type[Self], id: int) -> str:
+        return f"session.{id}.json"
+    
     @property
     def filename(self) -> str:
-        return f"session.{self.id}.json"
+        return self.make_filename(self.id)
 
     def save(self) -> None:
         path = Path(self.save_dir) / self.filename
         path.write_text(json.dumps(asdict(self), indent=2))
     
     @classmethod
-    def from_file(cls: type[Self], path: Path) -> Self:
+    def from_file(cls: type[Self], path: Path) -> Self:  # TODO: Add error handling when file doesn't exist
         session_dict = json.loads(path.read_text(encoding="utf-8"))
         
         if session_dict["commands"] is not None:
@@ -39,15 +44,23 @@ class CommandSession:
             session_dict["commands"] = [CommandData(**command) for command in session_dict["commands"]]
 
         return cls(**session_dict)
+    
+    @classmethod
+    def from_id(cls: type[Self], save_dir: Path, id: int) -> Self:
+        return cls.from_file(save_dir / cls.make_filename(id))
 
 
 class SessionManager:
     path: Path
     sessions: list[CommandSession]
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, new_session: bool = False):
         self.path = path
+        self.path.mkdir(parents=False, exist_ok=True)
         self.sessions = []
+        if new_session:
+            self.sessions.append(self.create_new_session())
+        
 
     def get_session_files(self) -> list[Path]:
         files = []
@@ -60,7 +73,7 @@ class SessionManager:
                 files.append(path)
         return files
 
-    def create_new_session(self, prompt: str) -> CommandSession:
+    def create_new_session(self, prompt: str = default_prompt) -> CommandSession:
         existing_ids = [int(p.name.split('.')[1]) for p in self.get_session_files()]
         new_id = (0 if not existing_ids else max(existing_ids) + 1)
         session = CommandSession(id=new_id, prompt=prompt, save_dir=str(self.path), commands=[])
@@ -72,13 +85,14 @@ class SessionManager:
         session_files = self.get_session_files()
         return max(session_files, key=lambda p: p.stat().st_mtime, default=None)
     
-    def load_most_recent_session(self) -> CommandSession | None:
+    def load_most_recent_session(self) -> CommandSession:
         session_path = self.find_most_recent_session()
         if session_path is None:
-            return None
+            return self.create_new_session()
         
         session = CommandSession.from_file(session_path)
         self.sessions.append(session)
         return session
-        
-
+    
+    def load(self, session_id: int) -> CommandSession:
+        return CommandSession.from_id(self.path, session_id)

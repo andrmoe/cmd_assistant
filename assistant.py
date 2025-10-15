@@ -6,18 +6,24 @@ from abbreviation import abbreviation
 
 class Assistant:
     default_prompt: str
+    initial_message: str
     session: CommandSession
     session_manager: SessionManager
     ai_api: Callable[[str], Generator[str, None, None]]
 
-    def __init__(self, save_path: Path, ai_api: Callable[[str], Generator[str, None, None]] = query_ollama):
+    def __init__(self, session_manager: SessionManager, session_id: int | None = None, 
+                 ai_api: Callable[[str], Generator[str, None, None]] = query_ollama):
         self.ai_api = ai_api
-        self.default_prompt = f"You are a linux command line assistant. You are run with the alias '{abbreviation}'. You will receive stdin to '{abbreviation}', and the command you were invoked with. Help the user in a concise manner."
-        save_path.mkdir(parents=False, exist_ok=True)
-        self.session_manager = SessionManager(save_path)
-        s = self.session_manager.load_most_recent_session()
-        if s is None:
-            s = self.session_manager.create_new_session(self.default_prompt)
+        self.session_manager = session_manager
+        self.initial_message = ""
+        if session_id is None:
+            s = self.session_manager.load_most_recent_session()
+        else:
+            s = self.session_manager.load(session_id)
+            # Passing a session id indicates that the user switched sessions. 
+            # They should therefore see the last message from that session.
+            if s.commands:
+                self.initial_message = s.commands[-1].ai_response  # TODO: Truncate this and make it prettier.
         self.session = s
 
     def command_session_to_prompt(self) -> str:

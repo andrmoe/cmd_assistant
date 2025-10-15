@@ -3,6 +3,8 @@ import io
 import json
 from pathlib import Path
 from typing import Generator
+import argparse
+from abbreviation import abbreviation
 
 from command_data import CommandData, CommandSession, SessionManager
 from assistant import Assistant
@@ -87,14 +89,23 @@ def mock_ai_api(prompt: str) -> Generator[str, None, None]:
 
 
 def test_assistant_creation(tmp_path: Path) -> None:
-    assistant0 = Assistant(ai_api=mock_ai_api, save_path=tmp_path)
+    session_manager = SessionManager(path=tmp_path)
+    assistant0 = Assistant(session_manager=session_manager, ai_api=mock_ai_api)
     assert (tmp_path / assistant0.session.filename).is_file()
-    assistant1 = Assistant(ai_api=mock_ai_api, save_path=tmp_path)
+    assistant1 = Assistant(session_manager=session_manager, ai_api=mock_ai_api)
     assert assistant0.session == assistant1.session
 
 
+def test_assistant_load_session(tmp_path: Path) -> None:
+    session_manager = SessionManager(path=tmp_path)
+    session = session_manager.create_new_session()
+    assistant = Assistant(session_manager, session.id)
+    assert session == assistant.session
+
+
 def test_assistant_new_command(tmp_path: Path) -> None:
-    assistant = Assistant(ai_api=mock_ai_api, save_path=tmp_path)
+    session_manager = SessionManager(path=tmp_path)
+    assistant = Assistant(session_manager=session_manager, ai_api=mock_ai_api)
     command = CommandData(command="mock_command", stdin="mock_stdin", ai_response="")
     response = "".join([chunk for chunk in assistant.new_command(command)])
     most_recent_session = assistant.session_manager.load_most_recent_session()
@@ -138,20 +149,47 @@ def test_print_ai_response(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_shell_with_pipe(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    monkeypatch.setenv("HISTORY", "299  <fake command> | kj --no-reply")
+    monkeypatch.setenv("HISTORY", f"299  <fake command> | {abbreviation} --listen")
     command_output = "<fake command output>\n"
     monkeypatch.setattr("sys.stdin", io.StringIO(command_output))
-    assert shell(["--no-reply", "--path", str(tmp_path)]) == 0
+    assert shell(["--listen", "--path", str(tmp_path)]) == 0
     captured = capsys.readouterr()
     assert command_output in captured.out
 
 
 def test_shell_without_pipe(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    monkeypatch.setenv("HISTORY", "300  kj --no-reply")
+    monkeypatch.setenv("HISTORY", f"300  {abbreviation} --listen")
     monkeypatch.setattr("sys.stdin", io.StringIO("<user request>\n"))
-    assert shell(["--no-reply", "--path", str(tmp_path)]) == 0
+    assert shell(["--listen", "--path", str(tmp_path)]) == 0
     captured = capsys.readouterr()
-    assert captured.out.strip() == ""
+    assert captured.out.strip() == welcome_message(0)
+
+
+def test_shell_switch_session(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
+    session_manager = SessionManager(tmp_path)
+    flag = "This is the switch session test"
+    session = session_manager.create_new_session()
+    session.commands.append(CommandData("<command>", "<stdin>", ai_response=flag))
+    session.save()
+    monkeypatch.setenv("HISTORY", f"301  {abbreviation} --listen")
+    monkeypatch.setattr("sys.stdin", io.StringIO("<user request>\n")) 
+    assert shell(["--listen", "--path", str(tmp_path), "--switch-session", str(session.id)]) == 0
+    captured = capsys.readouterr()
+    assert flag in captured.out.strip()
+
+
+def test_shell_new_session(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
+    session_manager = SessionManager(tmp_path)
+    flag = "This is the new session test"
+    session = session_manager.create_new_session()
+    session.commands.append(CommandData("<command>", "<stdin>", ai_response=flag))
+    session.save()
+    monkeypatch.setenv("HISTORY", f"302  {abbreviation} --listen")
+    monkeypatch.setattr("sys.stdin", io.StringIO("<user request>\n")) 
+    assert shell(["--listen", "--path", str(tmp_path), "--new-session"]) == 0
+    captured = capsys.readouterr()
+    assert captured.out.strip() == welcome_message(1)
+    assert sum(1 for f in tmp_path.iterdir() if f.is_file()) == 2
 
 
 def test_missing_history(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -161,7 +199,7 @@ def test_missing_history(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.parametrize("history_var", [
-    "301 <fake command>  --no-reply",  # Too few spaces after index, red herring "  " later
+    "301 <fake command>  --listen",  # Too few spaces after index, red herring "  " later
     "3b2  <fake command>",  # Non-integer index
     "<fake command>",       # No index
 ])
@@ -169,3 +207,14 @@ def test_malformed_history(monkeypatch: pytest.MonkeyPatch, history_var: str) ->
     monkeypatch.setenv("HISTORY", history_var)
     with pytest.raises(EnvironmentError):
         parse_command_history(get_command_history())
+
+
+@pytest.mark.parametrize("switch_session_arg", ["-10", "ls"])
+def test_shell_invalid_switch_session_arg(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, switch_session_arg: str) -> None:
+    session_manager = SessionManager(tmp_path)
+    session_manager.create_new_session()
+    monkeypatch.setenv("HISTORY", f"303  {abbreviation} --listen")
+    monkeypatch.setattr("sys.stdin", io.StringIO("<user request>\n")) 
+    assert shell(["--listen", "--path", str(tmp_path), "--switch-session", "0"]) == 0
+    with pytest.raises(argparse.ArgumentTypeError):
+        shell(["--listen", "--path", str(tmp_path), "--switch-session", switch_session_arg])
