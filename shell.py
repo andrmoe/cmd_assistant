@@ -66,6 +66,7 @@ def shell(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("-p", "--path", default=str(default_storage_path()))
     parser.add_argument("-n", "--new-session", action="store_true")
     parser.add_argument("-s", "--switch-session", nargs="?", const="interactive")
+    parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
 
     if args.switch_session == "interactive":
@@ -74,7 +75,7 @@ def shell(argv: Optional[Sequence[str]] = None) -> int:
         raise argparse.ArgumentTypeError("session id must be non-negative integer.")
     
     session_manager = SessionManager(Path(args.path), new_session=args.new_session)
-    assistant = Assistant(session_manager, session_id=args.switch_session)
+    assistant = Assistant(session_manager, session_id=args.switch_session, verbose=args.verbose)
 
     print(welcome_message(assistant.session.id))
     if assistant.initial_message:
@@ -84,7 +85,6 @@ def shell(argv: Optional[Sequence[str]] = None) -> int:
     output = read_stdin(forward_input=not last_command.startswith(abbreviation))
  
     cmd = CommandData(command=last_command, stdin=output, ai_response="")
-    
 
     print_ai_response(assistant.new_command(cmd, give_ai_response=not args.listen))
 

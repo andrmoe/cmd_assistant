@@ -219,3 +219,14 @@ def test_shell_invalid_switch_session_arg(monkeypatch: pytest.MonkeyPatch, tmp_p
     assert shell(["--listen", "--path", str(tmp_path), "--switch-session", "0"]) == 0
     with pytest.raises(argparse.ArgumentTypeError):
         shell(["--listen", "--path", str(tmp_path), "--switch-session", switch_session_arg])
+
+
+def test_shell_verbose(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
+    monkeypatch.setenv("HISTORY", f"304  {abbreviation} --listen --verbose")
+    monkeypatch.setattr("sys.stdin", io.StringIO("<user request>\n"))
+    assert shell(["--listen", "--path", str(tmp_path), "--verbose"]) == 0
+    captured = capsys.readouterr()
+    assert "<assistant>" in captured.out.strip()
+    assert "<stdin>" in captured.out.strip()
+    assert f"{abbreviation} --listen --verbose" in captured.out.strip()
+    assert "<user request>" in captured.out.strip()

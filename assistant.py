@@ -7,14 +7,14 @@ from prompts import command_session_to_prompt
 
 
 class Assistant:
-    default_prompt: str
     initial_message: str
     session: CommandSession
     session_manager: SessionManager
     ai_api: Callable[[str], Generator[str, None, None]]
 
     def __init__(self, session_manager: SessionManager, session_id: int | None = None, 
-                 ai_api: Callable[[str], Generator[str, None, None]] = query_ollama):
+                 verbose: bool = False, ai_api: Callable[[str], Generator[str, None, None]] = query_ollama):
+        self.verbose = verbose
         self.ai_api = ai_api
         self.session_manager = session_manager
         self.initial_message = ""
@@ -30,8 +30,10 @@ class Assistant:
 
     def new_command(self, command: CommandData, give_ai_response: bool = True) -> Generator[str, None, None]:
         self.session.commands.append(command)
+        prompt = command_session_to_prompt(self.session)
+        if self.verbose:
+                yield f"Prompt to {abbreviation}:\n{prompt}\n"
         if give_ai_response:
-            prompt = command_session_to_prompt(self.session)
             for chunk in self.ai_api(prompt):
                 command.ai_response += chunk
                 yield chunk
