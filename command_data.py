@@ -6,8 +6,6 @@ from abbreviation import abbreviation
 
 
 # TODO: Change dataclasses to TypedDict
-default_prompt = f"You are a linux command line assistant. You are run with the alias '{abbreviation}'. You will receive stdin to '{abbreviation}', and the command you were invoked with. Help the user in a concise manner."
-
 @dataclass
 class CommandData:
     command: str
@@ -18,7 +16,7 @@ class CommandData:
 @dataclass
 class CommandSession:
     id: int
-    prompt: str
+    prompt: str | None
     save_dir: str
     commands: list[CommandData]
 
@@ -73,7 +71,7 @@ class SessionManager:
                 files.append(path)
         return files
 
-    def create_new_session(self, prompt: str = default_prompt) -> CommandSession:
+    def create_new_session(self, prompt: str | None = None) -> CommandSession:
         existing_ids = [int(p.name.split('.')[1]) for p in self.get_session_files()]
         new_id = (0 if not existing_ids else max(existing_ids) + 1)
         session = CommandSession(id=new_id, prompt=prompt, save_dir=str(self.path), commands=[])

@@ -3,6 +3,8 @@ from ollamaapi import query_ollama
 from typing import Callable, Generator
 from pathlib import Path
 from abbreviation import abbreviation
+from prompts import command_session_to_prompt
+
 
 class Assistant:
     default_prompt: str
@@ -26,20 +28,10 @@ class Assistant:
                 self.initial_message = s.commands[-1].ai_response  # TODO: Truncate this and make it prettier.
         self.session = s
 
-    def command_session_to_prompt(self) -> str:
-        prompt = self.session.prompt + "\n\n"
-        for command in self.session.commands:
-            prompt += "Command:\n" + command.command + "\n\n"
-            if command.stdin:
-                prompt += "Stdin:\n" + command.stdin + "\n\n"
-            if command.ai_response:
-                prompt += "Assistant:\n" + command.ai_response + "\n"
-        return prompt
-
     def new_command(self, command: CommandData, give_ai_response: bool = True) -> Generator[str, None, None]:
         self.session.commands.append(command)
         if give_ai_response:
-            prompt = self.command_session_to_prompt()
+            prompt = command_session_to_prompt(self.session)
             for chunk in self.ai_api(prompt):
                 command.ai_response += chunk
                 yield chunk

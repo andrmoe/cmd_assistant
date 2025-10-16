@@ -51,6 +51,7 @@ def test_find_most_recent_session(tmp_path: Path) -> None:
     most_recent_session_path = session_manager.find_most_recent_session()
     assert most_recent_session_path is not None
     assert most_recent_session_path.name == "session.4.json"
+    assert session_manager.sessions[2].prompt is not None
     session_manager.sessions[2].prompt += " World!"
     session_manager.sessions[2].save()
     most_recent_session_path = session_manager.find_most_recent_session()

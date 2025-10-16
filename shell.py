@@ -79,7 +79,6 @@ def shell(argv: Optional[Sequence[str]] = None) -> int:
     print(welcome_message(assistant.session.id))
     if assistant.initial_message:
         print(assistant.initial_message)
-    print()
     
     # Don't echo the input to the terminal, if the user didn't use a pipe.
     output = read_stdin(forward_input=not last_command.startswith(abbreviation))
