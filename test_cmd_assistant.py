@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 from typing import Generator
 import argparse
-from abbreviation import abbreviation
 
+from abbreviation import abbreviation
 from command_data import CommandData, CommandSession, SessionManager
 from assistant import Assistant
 from ollamaapi import query_ollama
@@ -230,3 +230,22 @@ def test_shell_verbose(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFi
     assert "<stdin>" in captured.out.strip()
     assert f"{abbreviation} --listen --verbose" in captured.out.strip()
     assert "<user request>" in captured.out.strip()
+
+def test_shell_help(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    monkeypatch.setenv("HISTORY", f"305  {abbreviation} --help")
+    with pytest.raises(SystemExit):
+        shell(["--help"])
+    captured = capsys.readouterr()
+    assert f"usage: {abbreviation}" in captured.out.strip()
+    assert "--help" in captured.out.strip()
+    assert "--listen" in captured.out.strip()
+    assert "--path" in captured.out.strip()
+    assert "--new-session" in captured.out.strip()
+    assert "--switch-session" in captured.out.strip()
+    assert "SESSION_ID" in captured.out.strip()
+    assert "--verbose" in captured.out.strip()
+
+def test_shell_all_options_have_help() -> None:
+    parser = get_arg_parser()
+    missing_help = [action.option_strings for action in parser._actions if action.option_strings and not action.help]
+    assert not missing_help, f"Missing help for options: {missing_help}"

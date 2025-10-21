@@ -56,17 +56,32 @@ def welcome_message(session_id: int) -> str:
     return f"{abbreviation} command line assistant. Session {session_id}"
 
 
+def get_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog=abbreviation)
+
+    parser.add_argument("-l", "--listen", action="store_true", 
+                        help="only take in the informantion, don't answer yet")
+    
+    parser.add_argument("-p", "--path", default=str(default_storage_path()), 
+                        help=f"path to store session data. default is {str(default_storage_path())}")
+    
+    parser.add_argument("-n", "--new-session", action="store_true", 
+                        help="start a new session")
+    
+    parser.add_argument("-s", "--switch-session", nargs="?", const="interactive", metavar="SESSION_ID",
+                        help="switch to a the session with the given id. no argument opens an interactive session selector (WIP)")
+    
+    parser.add_argument("-v", "--verbose", action="store_true", 
+                        help="print debug info")
+    return parser
+
+
 def shell(argv: Optional[Sequence[str]] = None) -> int:
     history = get_command_history()
     parsed_history = parse_command_history(history)
     last_command = parsed_history[-1][1]
 
-    parser = argparse.ArgumentParser(prog=abbreviation)
-    parser.add_argument("-l", "--listen", action="store_true")
-    parser.add_argument("-p", "--path", default=str(default_storage_path()))
-    parser.add_argument("-n", "--new-session", action="store_true")
-    parser.add_argument("-s", "--switch-session", nargs="?", const="interactive")
-    parser.add_argument("-v", "--verbose", action="store_true")
+    parser = get_arg_parser()
     args = parser.parse_args(argv)
 
     if args.switch_session == "interactive":
