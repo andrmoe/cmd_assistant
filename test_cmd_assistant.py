@@ -10,6 +10,7 @@ from command_data import CommandData, CommandSession, SessionManager
 from assistant import Assistant
 from ollamaapi import query_ollama
 from shell import *
+from cli import get_arg_parser
 
 
 def test_session_save(tmp_path: Path) -> None:
