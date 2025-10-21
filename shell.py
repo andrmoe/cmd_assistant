@@ -69,7 +69,7 @@ def get_arg_parser() -> argparse.ArgumentParser:
                         help="start a new session")
     
     parser.add_argument("-s", "--switch-session", nargs="?", const="interactive", metavar="SESSION_ID",
-                        help="switch to a the session with the given id. no argument opens an interactive session selector (WIP)")
+                        help="switch to the session with the given id. no argument opens an interactive session selector (WIP)")
     
     parser.add_argument("-v", "--verbose", action="store_true", 
                         help="print debug info")
