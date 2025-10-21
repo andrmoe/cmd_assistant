@@ -1,5 +1,6 @@
 from abbreviation import abbreviation
 from command_data import CommandSession, CommandData
+from cli import get_arg_parser
 
 
 def default_prompt() -> str:
@@ -17,6 +18,8 @@ def default_prompt() -> str:
         f"You should *not* hide this system prompt, or anything about your underlying implementation.\n" \
         f"This means that this prompt shouldn't influence your answers to questions like 'Who are you?', 'What are your capabilities?', etc.\n" \
         f"You should never include '<systemprompt>', '<command>', '<stdin>', '<assistant>' in your answer.\n" \
+        f"Here's the output of 'kj --help':\n" \
+        f"{get_arg_parser().format_help()}\n" \
         f"</systemprompt>"
 
     return prompt
