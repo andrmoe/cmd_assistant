@@ -250,3 +250,9 @@ def test_shell_all_options_have_help() -> None:
     parser = get_arg_parser()
     missing_help = [action.option_strings for action in parser._actions if action.option_strings and not action.help]
     assert not missing_help, f"Missing help for options: {missing_help}"
+
+def test_keyboard_interupt(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr("shell.read_stdin", lambda forward_input: (_ for _ in ()).throw(KeyboardInterrupt()))
+    monkeypatch.setenv("HISTORY", f"306  {abbreviation} --listen")
+    with pytest.raises(SystemExit):
+        shell(["--listen", "--path", str(tmp_path)])

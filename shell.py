@@ -73,8 +73,11 @@ def shell(argv: Optional[Sequence[str]] = None) -> int:
     if assistant.initial_message:
         print(assistant.initial_message)
     
-    # Don't echo the input to the terminal, if the user didn't use a pipe.
-    output = read_stdin(forward_input=not last_command.startswith(abbreviation))
+    try:
+        # Don't echo the input to the terminal, if the user didn't use a pipe.
+        output = read_stdin(forward_input=not last_command.startswith(abbreviation))
+    except KeyboardInterrupt:  # Just exit if the user presses Ctrl+C
+        exit(0)
  
     cmd = CommandData(command=last_command, stdin=output, ai_response="")
 
