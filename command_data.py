@@ -38,7 +38,7 @@ class CommandSession:
         
         if session_dict["commands"] is not None:
             if not isinstance(session_dict["commands"], list):
-                raise TypeError(f"'commands' must be a list, not a {type(session_dict["commands"]).__name__}.\n{session_dict["commands"]=}")
+                raise TypeError(f"'commands' must be a list, not a {type(session_dict['commands']).__name__}.\n{session_dict['commands']=}")
             session_dict["commands"] = [CommandData(**command) for command in session_dict["commands"]]
 
         return cls(**session_dict)
