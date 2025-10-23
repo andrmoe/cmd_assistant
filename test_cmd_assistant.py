@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Generator
 import argparse
+import time
 
 from abbreviation import abbreviation
 from command_data import CommandData, CommandSession, SessionManager
@@ -50,6 +51,7 @@ def test_find_most_recent_session(tmp_path: Path) -> None:
     assert session_manager.find_most_recent_session() is None
     for _ in range(5):
         session_manager.create_new_session("Hello")
+        time.sleep(0.01)
     most_recent_session_path = session_manager.find_most_recent_session()
     assert most_recent_session_path is not None
     assert most_recent_session_path.name == "session.4.json"
