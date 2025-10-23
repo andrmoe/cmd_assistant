@@ -19,6 +19,7 @@ class CommandSession:
     prompt: str | None
     save_dir: str
     commands: list[CommandData]
+    context: list[int]
 
     @classmethod
     def make_filename(cls: type[Self], id: int) -> str:
@@ -74,7 +75,7 @@ class SessionManager:
     def create_new_session(self, prompt: str | None = None) -> CommandSession:
         existing_ids = [int(p.name.split('.')[1]) for p in self.get_session_files()]
         new_id = (0 if not existing_ids else max(existing_ids) + 1)
-        session = CommandSession(id=new_id, prompt=prompt, save_dir=str(self.path), commands=[])
+        session = CommandSession(id=new_id, prompt=prompt, save_dir=str(self.path), commands=[], context=[])
         session.save()
         self.sessions.append(session)
         return session

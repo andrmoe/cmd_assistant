@@ -15,7 +15,8 @@ from cli import get_arg_parser
 
 def test_session_save(tmp_path: Path) -> None:
     session = CommandSession(id=0, prompt="Hello", save_dir=str(tmp_path), 
-                             commands=[CommandData(command="fake command", stdin="fake output", ai_response="OK")])
+                             commands=[CommandData(command="fake command", stdin="fake output", ai_response="OK")],
+                             context=[])
     session.save()
 
     path = tmp_path / "session.0.json"
@@ -79,7 +80,7 @@ def test_session_from_file(tmp_path: Path) -> None:
     with pytest.raises(TypeError):
         CommandSession.from_file(tmp_path / session.filename)
 
-def mock_ai_api(prompt: str) -> Generator[str, None, None]:
+def mock_ai_api(prompt: str) -> Generator[str | list[int], None, None]:
         if "linux" in prompt:
             yield "response to linux"
         if "mock_command" in prompt:

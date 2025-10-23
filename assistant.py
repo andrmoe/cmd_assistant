@@ -10,10 +10,10 @@ class Assistant:
     initial_message: str
     session: CommandSession
     session_manager: SessionManager
-    ai_api: Callable[[str], Generator[str, None, None]]
+    ai_api: Callable[[str], Generator[str | list[int], None, None]]
 
     def __init__(self, session_manager: SessionManager, session_id: int | None = None, 
-                 verbose: bool = False, ai_api: Callable[[str], Generator[str, None, None]] = query_ollama):
+                 verbose: bool = False, ai_api: Callable[[str], Generator[str | list[int], None, None]] = query_ollama):
         self.verbose = verbose
         self.ai_api = ai_api
         self.session_manager = session_manager
@@ -35,6 +35,9 @@ class Assistant:
                 yield f"Prompt to {abbreviation}:\n{prompt}\n"
         if give_ai_response:
             for chunk in self.ai_api(prompt):
-                command.ai_response += chunk
-                yield chunk
+                if isinstance(chunk, list):
+                    self.session.context = chunk
+                else:
+                    command.ai_response += chunk
+                    yield chunk
         self.session.save()

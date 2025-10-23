@@ -1,7 +1,7 @@
 import os
 import sys
 from pathlib import Path
-from typing import Iterable, Optional, Sequence
+from typing import Iterable, Optional, Sequence, Any
 import argparse
 import re
 
@@ -38,12 +38,13 @@ def read_stdin(forward_input: bool=True) -> str:
     return output
 
 
-"""Takes an iterable of strings and prints them as they arrive. Returns the full printed string"""
-def print_ai_response(response_iter: Iterable[str]) -> str:
+"""Takes an iterable of Any and prints all strings as they arrive. Returns the full printed string"""
+def print_ai_response(response_iter: Iterable[Any]) -> str:
     response = ""
     for chunk in response_iter:
-        print(chunk, end="", flush=True)
-        response += chunk
+        if isinstance(chunk, str):
+            print(chunk, end="", flush=True)
+            response += chunk
         
     print()
     return response
